@@ -7,6 +7,4 @@ RUN mkdir /app
 ADD . /app
 WORKDIR /app
 
-ARG CACHEBUST=1
-
-CMD python /app/bot_test.py
+CMD python /app/bot.py
