@@ -50,8 +50,8 @@ def get_routes(start_station, end_station):
                                                                 heb_id_station[train['DestinationStation']])
                 depart_time = datetime.strptime(train['DepartureTime'], '%d/%m/%Y %H:%M:%S')
                 arrival_time = datetime.strptime(train['ArrivalTime'], '%d/%m/%Y %H:%M:%S')
-                duration = (arrival_time-depart_time) // 60
-                time_span = "{} {}->{} ({} דקות)\n".format(depart_time.strftime('%d/%m/%y'),
+                duration = (arrival_time-depart_time).seconds // 60
+                time_span = "{} {}->{} (משך {} דקות)\n".format(depart_time.strftime('%d/%m/%y'),
                                               depart_time.strftime('%H:%M'),
                                               arrival_time.strftime('%H:%M'),
                                                            duration)
