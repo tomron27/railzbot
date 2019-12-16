@@ -40,18 +40,22 @@ def get_routes(start_station, end_station):
         if len(routes) == 0:
             response = "אין רכבות זמינות. אנא נסה/י מאוחר יותר.\n"
         for i, route in enumerate(routes[:ROUTE_LIMIT]):
-            response += "מסלול {}:\n".format(i+1)
-            for train in route['Train']:
+            response += "**מסלול {}**:\n".format(i+1)
+            for j, train in enumerate(route['Train']):
+                if j > 0:
+                    response += "*החלפה*\n"
                 train_id = int(train['Trainno'])
+                response += "רכבת מס': {} (מ{} אל {})\n".format(train_id,
+                                                                heb_id_station[train['OrignStation']],
+                                                                heb_id_station[train['DestinationStation']])
                 depart_time = datetime.strptime(train['DepartureTime'], '%d/%m/%Y %H:%M:%S')
                 arrival_time = datetime.strptime(train['ArrivalTime'], '%d/%m/%Y %H:%M:%S')
-                time_span = "{} {}<-{}".format(depart_time.strftime('%d/%m/%y'),
+                duration = (arrival_time-depart_time) // 60
+                time_span = "{} {}->{} ({} דקות)\n".format(depart_time.strftime('%d/%m/%y'),
                                               depart_time.strftime('%H:%M'),
-                                              arrival_time.strftime('%H:%M'))
-                response += "רכבת מס': {} (מ{} אל {}), {}\n".format(train_id,
-                                                                   heb_id_station[train['OrignStation']],
-                                                                   heb_id_station[train['DestinationStation']],
-                                                                                                 time_span)
+                                              arrival_time.strftime('%H:%M'),
+                                                           duration)
+                response += time_span
                 response += "סטטוס: "
                 try:
                     dif_type, dif_min = train_positions[train_id]['DifType'], train_positions[train_id]['DifMin']
@@ -62,14 +66,14 @@ def get_routes(start_station, end_station):
                     if dif_type == "AHEAD":
                         dif_type = "מקדימה"
                     if dif_type == "בזמן":
-                        response += dif_type
+                        response += dif_type + "."
                     else:
                         if depart_time < now:
                             alt_time = get_time_diff(dif_type, dif_min, train['ArrivalTime'])
-                            response += dif_type + " כ-{} דקות (תגיע ב {})".format(dif_min, alt_time)
+                            response += dif_type + " כ-{} דקות (תגיע ב {}).".format(dif_min, alt_time)
                         else:
                             alt_time = get_time_diff(dif_type, dif_min, train['DepartureTime'])
-                            response += dif_type + " כ-{} דקות (תצא ב {})".format(dif_min, alt_time)
+                            response += dif_type + " כ-{} דקות (תצא ב {}).".format(dif_min, alt_time)
 
                 except KeyError:
                     response += "לא נמצאו לוחות זמנים.".format(train_id)

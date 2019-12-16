@@ -24,25 +24,6 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
 
-
-def run(updater):
-    if mode == "dev":
-        logger.info("Dev mode")
-        updater.start_polling()
-    elif mode == "prod":
-        logger.info("Production mode")
-        PORT = int(os.environ.get("PORT", "8443"))
-        HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
-        # Code from https://github.com/python-telegram-bot/python-telegram-bot/wiki/Webhooks#heroku
-        updater.start_webhook(listen="0.0.0.0",
-                              port=PORT,
-                              url_path=TOKEN)
-        updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
-    else:
-        logger.error("No MODE specified!")
-        sys.exit(1)
-
-
 CHOOSING_DEPART, CHOOSING_ARRIVE, CALC_RESULT = range(3)
 
 
@@ -78,10 +59,14 @@ def get_dest_station(update, context):
     if 'depart_station' in context.user_data and 'dest_station' in context.user_data:
         depart_station = context.user_data['depart_station']
         dest_station = context.user_data['dest_station']
+        if depart_station == dest_station:
+            update.message.reply_text("לא מצחיק!")
+            return CHOOSING_DEPART
         res = get_routes(depart_station, dest_station)
         update.message.reply_text(res)
     else:
         update.message.reply_text("נתונים חסרים. אנא התחל/י מחדש")
+        return CHOOSING_DEPART
 
     return ConversationHandler.END
 
@@ -89,7 +74,7 @@ def get_dest_station(update, context):
 def cancel(update, context):
     user = update.message.from_user
     logger.info("User {} canceled the conversation.".format(user))
-    update.message.reply_text('להתראות!')
+    update.message.reply_text('ריילזבוט שמח לעזור!')
 
     return ConversationHandler.END
 
@@ -131,10 +116,27 @@ def main():
 
 
 if __name__ == '__main__':
+
     mode = os.getenv("MODE")
     TOKEN = os.getenv("TOKEN")
     logger.info("Starting bot")
 
     updater = Updater(TOKEN, use_context=True)
+
+    if mode == "dev":
+        logger.info("Dev mode")
+        updater.start_polling()
+    elif mode == "prod":
+        logger.info("Production mode")
+        PORT = int(os.environ.get("PORT", "8443"))
+        HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
+        # Code from https://github.com/python-telegram-bot/python-telegram-bot/wiki/Webhooks#heroku
+        updater.start_webhook(listen="0.0.0.0",
+                              port=PORT,
+                              url_path=TOKEN)
+        updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
+    else:
+        logger.error("No MODE specified!")
+        sys.exit(1)
+
     main()
-    run(updater)
