@@ -59,7 +59,7 @@ def get_depart_station(update, context):
     found_station, score = res
     context.user_data['depart_station'] = found_station
     update.message.reply_text("תחנת מוצא: {}".format(found_station))
-    update.message.reply_text("הכנס תחנת יעד:")
+    update.message.reply_text("הכנס/י תחנת יעד:")
 
     return CHOOSING_ARRIVE
 
@@ -79,7 +79,7 @@ def get_dest_station(update, context):
         res = get_routes(depart_station, dest_station)
         update.message.reply_text(res)
     else:
-        update.message.reply_text("נתונים חסרים. אנא התחל מחדש")
+        update.message.reply_text("נתונים חסרים. אנא התחל/י מחדש")
 
     return ConversationHandler.END
 
