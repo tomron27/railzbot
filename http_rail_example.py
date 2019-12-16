@@ -1,6 +1,6 @@
 import requests
 import json
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 base_url = "https://www.rail.co.il/apiinfo/api/Plan/GetRoutes"
 route_limit = 5
@@ -32,10 +32,7 @@ def get_time_diff(code, delta, str_time):
         new_timestamp = timestamp + timedelta(minutes=delta)
     else:
         new_timestamp = timestamp
-    res = "{} -> {}".format(
-        timestamp.strftime('%H:%M'),
-        new_timestamp.strftime('%H:%M')
-    )
+    res = "arrive at {}".format(new_timestamp.strftime('%H:%M'))
     return res
 
 
@@ -77,10 +74,13 @@ try:
             train_id = int(train['Trainno'])
             depart_time = datetime.strptime(train['DepartureTime'], '%d/%m/%Y %H:%M:%S')
             arrival_time = datetime.strptime(train['ArrivalTime'], '%d/%m/%Y %H:%M:%S')
-            response += " Train id: {} (from {} to {}), departing at {}\n   Status: ".format(train_id,
+            time_span = "{} {}->{}".format(depart_time.strftime('%d/%m/%y'),
+                                          depart_time.strftime('%H:%M'),
+                                          arrival_time.strftime('%H:%M'))
+            response += " Train id: {} (from {} to {}), {}\n   Status: ".format(train_id,
                                                                eng_id_station[train['OrignStation']],
                                                                eng_id_station[train['DestinationStation']],
-                                                               depart_time.strftime('%d/%m/%Y %H:%M'))
+                                                                                             time_span)
             try:
                 dif_type, dif_min = train_positions[train_id]['DifType'], train_positions[train_id]['DifMin']
                 if dif_min == 0 and dif_type == "":
@@ -96,17 +96,6 @@ try:
                 response += "No itinerary data for {}, please try again later.".format(train_id)
             finally:
                 response += "\n"
-        # if str(route['Train'][0]['DepartureTime']) == f'{todayParsed} {departureParsed}':
-        #     trainNum = rout['Train'][0]['Trainno']
-    # assert 'trainNum' in locals(), "could not find the train number"
-    # for pos in TrainPositions:
-    #     if str(trainNum) == str(pos['TrainNumber']):
-    #         delay = pos['DifMin']
-    # assert 'delay' in locals(), ("There no available data for this train yet, please try again later\n"
-    #                              "(data is usually available 1 hour before departure)")
-    # print(f'Train num: {trainNum} from: {fStation} to: {tStation} will be delayed by {delay} minutes\n'
-    #       f'Leave by {int(departure) - 10 + delay} by foot \nor by '
-    #       f'{int(departure) + delay - 5} if you have a cool scooter ')
     print(response)
 except () as e:
     print(e)
