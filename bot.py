@@ -16,7 +16,6 @@ import sys
 from utils import get_fuzzy_station_name
 from route import get_routes
 
-from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardMarkup, ReplyMarkup, ForceReply)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                           ConversationHandler)
 
@@ -30,7 +29,7 @@ def run(updater):
     if mode == "dev":
             updater.start_polling()
     elif mode == "prod":
-            PORT = int(os.environ.get("PORT", "8443"))
+            PORT = int(os.environ.get("PORT", 8443))
             HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
             # Code from https://github.com/python-telegram-bot/python-telegram-bot/wiki/Webhooks#heroku
             updater.start_webhook(listen="0.0.0.0",
@@ -86,16 +85,15 @@ def get_dest_station(update, context):
 
 def cancel(update, context):
     user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
-    update.message.reply_text('Bye! I hope we can talk again some day.',
-                              reply_markup=ReplyKeyboardRemove())
+    logger.info("User {} canceled the conversation.".format(user))
+    update.message.reply_text('להתראות!')
 
     return ConversationHandler.END
 
 
 def error(update, context):
     """Log Errors caused by Updates."""
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
+    logger.warning('Update {} caused error {}'.format(update, context.error))
 
 
 def main():
