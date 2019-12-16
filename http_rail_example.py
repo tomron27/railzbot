@@ -1,40 +1,8 @@
-import requests
-import json
 from datetime import datetime, timedelta
-
-base_url = "https://www.rail.co.il/apiinfo/api/Plan/GetRoutes"
-route_limit = 5
-
-def get_stations(use_cache=True):
-    if not use_cache:
-        response = requests.get(base_url)
-        if response.status_code != 200:
-            raise ValueError("Error - Return Code: {}".format(response.status_code))
-        data = json.loads(response.content)['Data']['CustomPropertys']
-    else:
-        with open("stations.json", encoding="utf-8") as stations:
-            data = json.load(stations)['Data']['CustomPropertys']
-    eng_station_id, heb_station_id = {}, {}
-    for item in data:
-        heb_station_id[item['Heb'][0]] = item['Id']
-        eng_station_id[item['Eng'][0]] = item['Id']
-
-    eng_id_station = {v: k for k, v in eng_station_id.items()}
-    heb_id_station = {v: k for k, v in heb_station_id.items()}
-    return eng_station_id, heb_station_id, eng_id_station, heb_id_station
-
-
-def get_time_diff(code, delta, str_time):
-    timestamp = datetime.strptime(str_time, '%d/%m/%Y %H:%M:%S')
-    if code == 'AHEAD':
-        new_timestamp = timestamp - timedelta(minutes=delta)
-    elif code == 'DELAYED':
-        new_timestamp = timestamp + timedelta(minutes=delta)
-    else:
-        new_timestamp = timestamp
-    res = "arrive at {}".format(new_timestamp.strftime('%H:%M'))
-    return res
-
+import json
+import requests
+from utils import get_stations, get_time_diff
+from config import BASE_URL, ROUTE_LIMIT
 
 eng_station_id, heb_station_id, eng_id_station, heb_id_station = get_stations()
 
@@ -45,7 +13,7 @@ end_station = 'Caesarea-Pardes Hana'
 now = datetime.now()
 # now = datetime(year=2019, month=12, day=16, hour=8, minute=0, second=0)
 
-url = base_url + "?" \
+url = BASE_URL + "?" \
       "OId={}&TId={}&Date={}&Hour={}&isGoing=true&c=1572448829822".format(
     eng_station_id[start_station],
     eng_station_id[end_station],
@@ -68,7 +36,7 @@ response = ""
 try:
     if len(routes) == 0:
         response = "No available routes. Try again later.\n"
-    for i, route in enumerate(routes[:route_limit]):
+    for i, route in enumerate(routes[:ROUTE_LIMIT]):
         response += "Route {}:\n".format(i+1)
         for train in route['Train']:
             train_id = int(train['Trainno'])
