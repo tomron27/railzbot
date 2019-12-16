@@ -34,6 +34,7 @@ def get_routes(start_station, end_station):
 
     routes = data['Routes']
     train_positions = {x['TrainNumber']: x for x in data['TrainPositions']}
+    congestion = {x['TrainNumber']: x for x in data['Omasim']}
 
     response = ""
     try:
@@ -55,6 +56,12 @@ def get_routes(start_station, end_station):
                                               depart_time.strftime('%H:%M'),
                                               arrival_time.strftime('%H:%M'),
                                                            duration)
+
+                cong_data = congestion[train_id]['Stations']
+                station_cong_data = {x['StationNumber']: x for x in cong_data}
+                platform = station_cong_data[int(train['OrignStation'])]['Platform']
+                station_cong = station_cong_data[int(train['OrignStation'])]['OmesPercent']
+                response += "רציף {}, מדד עומס {:.2f}\n".format(platform, station_cong)
                 response += time_span
                 response += "סטטוס: "
                 try:
