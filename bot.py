@@ -24,25 +24,6 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
 
-
-def run(updater):
-    if mode == "dev":
-        logger.info("Dev mode")
-        updater.start_polling()
-    elif mode == "prod":
-        logger.info("Production mode")
-        PORT = int(os.environ.get("PORT", "8443"))
-        HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
-        # Code from https://github.com/python-telegram-bot/python-telegram-bot/wiki/Webhooks#heroku
-        updater.start_webhook(listen="0.0.0.0",
-                              port=PORT,
-                              url_path=TOKEN)
-        updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
-    else:
-        logger.error("No MODE specified!")
-        sys.exit(1)
-
-
 CHOOSING_DEPART, CHOOSING_ARRIVE, CALC_RESULT = range(3)
 
 
@@ -135,5 +116,21 @@ if __name__ == '__main__':
     logger.info("Starting bot")
 
     updater = Updater(TOKEN, use_context=True)
+
+    if mode == "dev":
+        logger.info("Dev mode")
+        updater.start_polling()
+    elif mode == "prod":
+        logger.info("Production mode")
+        PORT = int(os.environ.get("PORT", "8443"))
+        HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
+        # Code from https://github.com/python-telegram-bot/python-telegram-bot/wiki/Webhooks#heroku
+        updater.start_webhook(listen="0.0.0.0",
+                              port=PORT,
+                              url_path=TOKEN)
+        updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
+    else:
+        logger.error("No MODE specified!")
+        sys.exit(1)
+
     main()
-    run(updater)
