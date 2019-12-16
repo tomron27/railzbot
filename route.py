@@ -68,7 +68,7 @@ def get_routes(start_station, end_station):
                     if dif_type == "בזמן":
                         response += dif_type + "."
                     else:
-                        if depart_time < now:
+                        if depart_time < now - timedelta(minutes=dif_min):  #TODO - can be ahead as well..
                             alt_time = get_time_diff(dif_type, dif_min, train['ArrivalTime'])
                             response += dif_type + " כ-{} דקות (תגיע ב {}).".format(dif_min, alt_time)
                         else:
