@@ -38,9 +38,9 @@ def get_routes(start_station, end_station):
     response = ""
     try:
         if len(routes) == 0:
-            response = "No available routes. Try again later.\n"
+            response = "אין רכבות זמינות. אנא נסה/י מאוחר יותר.\n"
         for i, route in enumerate(routes[:ROUTE_LIMIT]):
-            response += "Route {}:\n".format(i+1)
+            response += "מסלול {}:\n".format(i+1)
             for train in route['Train']:
                 train_id = int(train['Trainno'])
                 depart_time = datetime.strptime(train['DepartureTime'], '%d/%m/%Y %H:%M:%S')
@@ -48,25 +48,33 @@ def get_routes(start_station, end_station):
                 time_span = "{} {}->{}".format(depart_time.strftime('%d/%m/%y'),
                                               depart_time.strftime('%H:%M'),
                                               arrival_time.strftime('%H:%M'))
-                response += " Train id: {} (from {} to {}), {}\n   Status: ".format(train_id,
-                                                                   eng_id_station[train['OrignStation']],
-                                                                   eng_id_station[train['DestinationStation']],
+                response += " רכבת מס': {} (מ{} אל {}), {}\n".format(train_id,
+                                                                   heb_id_station[train['OrignStation']],
+                                                                   heb_id_station[train['DestinationStation']],
                                                                                                  time_span)
+                response += "   סטטוס: "
                 try:
                     dif_type, dif_min = train_positions[train_id]['DifType'], train_positions[train_id]['DifMin']
                     if dif_min == 0 and dif_type == "":
-                        dif_type = "ON TIME"
+                        dif_type = "בזמן"
                     if dif_type == "DELAY":
-                        dif_type = "DELAYED"
-                    if dif_type == "ON TIME":
+                        dif_type = "מתעכבת"
+                    if dif_type == "AHEAD":
+                        dif_type = "מקדימה"
+                    if dif_type == "בזמן":
                         response += dif_type
                     else:
-                        alt_time = get_time_diff(dif_type, dif_min, train['ArrivalTime'])
-                        response += dif_type + " by {} minutes ({})".format(dif_min, alt_time)
+                        if depart_time < now:
+                            alt_time = get_time_diff(dif_type, dif_min, train['ArrivalTime'])
+                            response += dif_type + " כ-{} דקות (תגיע ב {})".format(dif_min, alt_time)
+                        else:
+                            alt_time = get_time_diff(dif_type, dif_min, train['DepartureTime'])
+                            response += dif_type + " כ-{} דקות (תצא ב {})".format(dif_min, alt_time)
+
                 except KeyError:
-                    response += "No itinerary data for {}, please try again later.".format(train_id)
+                    response += "לא נמצאו לוחות זמנים עבור רכבת {}".format(train_id)
                 finally:
                     response += "\n"
         return response
-    except () as e:
-        return e
+    except Exception as e:
+        return str(e)
