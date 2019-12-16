@@ -26,14 +26,13 @@ def get_stations(use_cache=True):
 
 def get_time_diff(code, delta, str_time):
     timestamp = datetime.strptime(str_time, '%d/%m/%Y %H:%M:%S')
-    if code == 'AHEAD':
+    if code == 'מקדימה':
         new_timestamp = timestamp - timedelta(minutes=delta)
-    elif code == 'DELAYED':
+    elif code == 'מאחרת':
         new_timestamp = timestamp + timedelta(minutes=delta)
     else:
         new_timestamp = timestamp
-    res = "arrives at {}".format(new_timestamp.strftime('%H:%M'))
-    return res
+    return new_timestamp.strftime('%H:%M')
 
 
 def get_combined_station_id_dict():

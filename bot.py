@@ -47,7 +47,8 @@ CHOOSING_DEPART, CHOOSING_ARRIVE, CALC_RESULT = range(3)
 
 
 def start(update, context):
-    update.message.reply_text("ברוכ/ה הבא/ה לריילזבוט! הכנס/י תחנת מוצא:")
+    update.message.reply_text("ברוכ/ה הבא/ה לריילזבוט!")
+    update.message.reply_text("הכנס/י תחנת מוצא:")
     return CHOOSING_DEPART
 
 
