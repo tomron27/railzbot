@@ -36,8 +36,13 @@ def get_time_diff(code, delta, str_time):
     return res
 
 
+def get_combined_station_id_dict():
+    eng_station_id, heb_station_id, _, _ = get_stations()
+    return {k: v for (k, v) in list(eng_station_id.items()) + list(heb_station_id.items())}
+
+
 def get_fuzzy_station_name(query):
     eng_station_id, heb_station_id, _, _ = get_stations()
     stations = list(eng_station_id.keys()) + list(heb_station_id.keys())
-    res, score = process.extractOne(query, stations, scorer=fuzz.UWRatio)
-    return res, score
+    res = process.extractOne(query, stations, scorer=fuzz.UWRatio)
+    return res
