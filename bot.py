@@ -87,7 +87,7 @@ def get_depart_time(update, context):
         update.message.reply_text(res, parse_mode=telegram.ParseMode.MARKDOWN)
         return ConversationHandler.END
     else:
-        update.message.reply_text("לאיזה זמן?", reply_markup=telegram.ReplyKeyboardRemove())
+        update.message.reply_text("באיזה זמן?", reply_markup=telegram.ReplyKeyboardRemove())
         return PARSE_TIME
 
 
@@ -97,7 +97,7 @@ def get_parsed_time(update, context):
     time_input = update.message.text
     found_time = dateparser.parse(time_input)
     if found_time is None:
-        update.message.reply_text("לא הצלחתי להבין מתי. נסה/י שוב")
+        update.message.reply_text("לא הצלחתי להבין מתי. נסה/י להזין תאריך ושעה או טקסט כגון 'מחר 08:30'.")
         return PARSE_TIME
     else:
         update.message.reply_text("מחשב תוצאות עבור: {}".format(found_time.strftime('%d/%m/%y %H:%M')))
