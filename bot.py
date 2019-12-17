@@ -15,7 +15,10 @@ import os
 import sys
 from utils import get_fuzzy_station_name
 from route import get_routes
+from datetime import datetime, timedelta
+import dateparser
 
+import telegram
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                           ConversationHandler)
 
@@ -24,13 +27,13 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
 
-CHOOSING_DEPART, CHOOSING_ARRIVE, CALC_RESULT = range(3)
+CHOOSE_ORIGIN, CHOOSE_DEST, CHOOSE_TIME, PARSE_TIME, CALC_RESULT = range(5)
 
 
 def start(update, context):
     update.message.reply_text("ברוכ/ה הבא/ה לריילזבוט!")
     update.message.reply_text("הכנס/י תחנת מוצא:")
-    return CHOOSING_DEPART
+    return CHOOSE_ORIGIN
 
 
 def get_depart_station(update, context):
@@ -43,8 +46,7 @@ def get_depart_station(update, context):
     context.user_data['depart_station'] = found_station
     update.message.reply_text("תחנת מוצא: {}".format(found_station))
     update.message.reply_text("הכנס/י תחנת יעד:")
-
-    return CHOOSING_ARRIVE
+    return CHOOSE_DEST
 
 
 def get_dest_station(update, context):
@@ -55,20 +57,55 @@ def get_dest_station(update, context):
     found_station, score = res
     context.user_data['dest_station'] = found_station
     update.message.reply_text("תחנת יעד: {}".format(found_station))
-    update.message.reply_text("מחשב תוצאות...")
+
     if 'depart_station' in context.user_data and 'dest_station' in context.user_data:
         depart_station = context.user_data['depart_station']
         dest_station = context.user_data['dest_station']
         if depart_station == dest_station:
-            update.message.reply_text("לא מצחיק!")
-            return CHOOSING_DEPART
-        res = get_routes(depart_station, dest_station)
-        update.message.reply_text(res)
+            update.message.reply_text("אנא הכנס/י תחנת מוצא ויעד שונות.")
+            return CHOOSE_ORIGIN
     else:
         update.message.reply_text("נתונים חסרים. אנא התחל/י מחדש")
-        return CHOOSING_DEPART
+        return ConversationHandler.END
 
-    return ConversationHandler.END
+    reply_keyboard = [['אחר כך', 'עכשיו']]
+    update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+
+    return CHOOSE_TIME
+
+
+def get_depart_time(update, context):
+
+    user = update.message.from_user
+    logger.info("User {}, keyboard time input: {}".format(user, update.message.text))
+    time_keyboard_input = update.message.text
+    if time_keyboard_input == "עכשיו":
+        update.message.reply_text("מחשב תוצאות עבור: {}".format(time_keyboard_input), reply_markup=telegram.ReplyKeyboardRemove())
+        depart_station = context.user_data['depart_station']
+        dest_station = context.user_data['dest_station']
+        res = get_routes(depart_station, dest_station, datetime.now())
+        update.message.reply_text(res, parse_mode=telegram.ParseMode.MARKDOWN)
+        return ConversationHandler.END
+    else:
+        update.message.reply_text("לאיזה זמן?", reply_markup=telegram.ReplyKeyboardRemove())
+        return PARSE_TIME
+
+
+def get_parsed_time(update, context):
+    user = update.message.from_user
+    logger.info("User {}, parsed time input: {}".format(user, update.message.text))
+    time_input = update.message.text
+    found_time = dateparser.parse(time_input)
+    if found_time is None:
+        update.message.reply_text("לא הצלחתי להבין מתי. נסה/י שוב")
+        return PARSE_TIME
+    else:
+        update.message.reply_text("מחשב תוצאות עבור: {}".format(found_time.strftime('%d/%m/%y %H:%M')))
+        depart_station = context.user_data['depart_station']
+        dest_station = context.user_data['dest_station']
+        res = get_routes(depart_station, dest_station, found_time)
+        update.message.reply_text(res, parse_mode=telegram.ParseMode.MARKDOWN)
+        return ConversationHandler.END
 
 
 def cancel(update, context):
@@ -94,8 +131,10 @@ def main():
         entry_points=[CommandHandler('start', start)],
 
         states={
-            0: [MessageHandler(Filters.text, get_depart_station)],
-            1: [MessageHandler(Filters.text, get_dest_station)],
+            CHOOSE_ORIGIN: [MessageHandler(Filters.text, get_depart_station)],
+            CHOOSE_DEST: [MessageHandler(Filters.text, get_dest_station)],
+            CHOOSE_TIME: [MessageHandler(Filters.text, get_depart_time)],
+            PARSE_TIME: [MessageHandler(Filters.text, get_parsed_time)]
         },
 
         fallbacks=[CommandHandler('cancel', cancel)]
