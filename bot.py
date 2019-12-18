@@ -99,6 +99,11 @@ def get_parsed_time(update, context):
     if found_time is None:
         update.message.reply_text("לא הצלחתי להבין מתי. נסה/י להזין תאריך ושעה או טקסט כגון 'מחר 08:30'.")
         return PARSE_TIME
+    now = datetime.now()
+    if (now - found_time).seconds > 30:
+        update.message.reply_text("מחשב תוצאות עבור: {}".format(found_time.strftime('%d/%m/%y %H:%M')))
+        update.message.reply_text("לא ניתן לקבל לוחות זמנים של רכבות עבר. נסה/י שנית.")
+        return PARSE_TIME
     else:
         update.message.reply_text("מחשב תוצאות עבור: {}".format(found_time.strftime('%d/%m/%y %H:%M')))
         depart_station = context.user_data['depart_station']
