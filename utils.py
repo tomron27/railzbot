@@ -26,9 +26,7 @@ def get_stations(use_cache=True):
 
 def get_time_diff(code, delta, str_time):
     timestamp = datetime.strptime(str_time, '%d/%m/%Y %H:%M:%S')
-    if code == 'מקדימה':
-        new_timestamp = timestamp - timedelta(minutes=delta)
-    elif code == 'מתעכבת':
+    if code == 'מתעכבת':
         new_timestamp = timestamp + timedelta(minutes=delta)
     else:
         new_timestamp = timestamp
