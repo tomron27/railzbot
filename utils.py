@@ -181,6 +181,7 @@ def server(server_url, port):
 
 class WakeupHandler(BaseHTTPRequestHandler):
     def do_GET(self):
+        logger.info("Got GET request")
         if self.path == '/wakeup':
             logger.info("Wake up url invoked")
             self.send_response(200, message="I'm still alive")
@@ -203,6 +204,6 @@ def wakeup_wrapper(app_url, port=8080):
     server_thread.start()
 
     # Wakeup worker
-    wakeup_thread = Thread(target=wakeup_worker, args=(app_url + 'wakeup', WAKEUP_PERIOD))
+    wakeup_thread = Thread(target=wakeup_worker, args=(app_url + '/wakeup', WAKEUP_PERIOD))
     wakeup_thread.daemon = True
     wakeup_thread.start()
