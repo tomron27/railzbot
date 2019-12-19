@@ -27,7 +27,6 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
 
-# TODO - Fix dates to start in monday...
 DAYS_DICT = {'א': 6, 'ב': 0, 'ג': 1, 'ד': 2, 'ה': 3, 'ו': 4, 'ש': 5}
 REV_DAYS_DICT = {v: k for k, v in DAYS_DICT.items()}
 
