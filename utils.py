@@ -173,9 +173,9 @@ def notify(context):
 
 
 # Server / HTTP Utils
-def server(server_url):
+def server(server_url, port):
     logger.info("TCP server started at {}".format(server_url))
-    httpd = TCPServer((server_url, "8080"), WakeupHandler)
+    httpd = TCPServer((server_url, port), WakeupHandler)
     httpd.serve_forever()
 
 
