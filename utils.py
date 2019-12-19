@@ -184,7 +184,7 @@ def wakeup_worker(wake_url, rep=30):
         time.sleep(rep)
 
 
-def wakeup_warpper(app_url):
+def wakeup_wrapper(app_url):
     # Wakeup Server
     server_thread = Thread(target=server)
     server_thread.daemon = True

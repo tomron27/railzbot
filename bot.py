@@ -207,7 +207,7 @@ if __name__ == '__main__':
         updater.start_polling()
 
         app_url = "http://localhost:8080/"
-        wakeup_warpper(app_url)
+        wakeup_wrapper(app_url)
 
     elif mode == "prod":
         logger.info("Production mode")
@@ -221,7 +221,7 @@ if __name__ == '__main__':
         updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
 
         app_url = "http://railzbot.herokuapp.com/"
-        wakeup_warpper(app_url)
+        wakeup_wrapper(app_url)
 
     else:
         logger.error("No MODE specified!")
