@@ -203,7 +203,7 @@ def wakeup_wrapper(app_url, port=8080):
     server_thread.daemon = True
     server_thread.start()
 
-    # Wakeup worker
-    wakeup_thread = Thread(target=wakeup_worker, args=(app_url + '/wakeup', WAKEUP_PERIOD))
-    wakeup_thread.daemon = True
-    wakeup_thread.start()
+    # # Wakeup worker
+    # wakeup_thread = Thread(target=wakeup_worker, args=(app_url + '/wakeup', WAKEUP_PERIOD))
+    # wakeup_thread.daemon = True
+    # wakeup_thread.start()
