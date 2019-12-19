@@ -174,11 +174,10 @@ def get_day_schedule(update, context):
     sched_day_message = update.message.text
     if "," in sched_day_message:
         try:
-            days = list(sched_day_message.replace(" ", "").replace(",", ""))
-            if len(days) == 0:
+            sanitized_days = [DAYS_DICT[x] for x in list(sched_day_message.replace(" ", "").replace(",", ""))]
+            if len(sanitized_days) == 0:
                 update.message.reply_text("לא הצלחתי להבין את טווח הימים. נסה/י להזין שוב ללא גרשיים או פיסוק מיותר.")
                 return DAY_SCHEDULE
-            sanitized_days = days
         except:
             update.message.reply_text("לא הצלחתי להבין את טווח הימים. נסה/י להזין שוב ללא גרשיים או פיסוק מיותר.")
             return DAY_SCHEDULE
