@@ -174,7 +174,7 @@ def get_day_schedule(update, context):
     sched_day_message = update.message.text
     if "," in sched_day_message:
         try:
-            days = list(sched_day_message.replace(",", ""))
+            days = list(sched_day_message.replace(" ", "").replace(",", ""))
             if len(days) == 0:
                 update.message.reply_text("לא הצלחתי להבין את טווח הימים. נסה/י להזין שוב ללא גרשיים או פיסוק מיותר.")
                 return DAY_SCHEDULE
@@ -194,7 +194,7 @@ def get_day_schedule(update, context):
     logger.info("User {}, adding schedule at time {}, days: {}".format(user, found_time, sanitized_days))
     context.job_queue.run_daily(notify, found_time, days=tuple(sanitized_days), context=context)
     update.message.reply_text("התראה נוספה בהצלחה.")
-    return PAST_ROUTE
+    return ConversationHandler.END
 
 
 def cancel(update, context):
