@@ -170,7 +170,7 @@ def server():
 class WakeupHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/wakeup':
-            logger.info("Wake up url invoked.")
+            logger.info("Wake up url invoked")
             self.send_response(200, message="I'm still alive")
             self.end_headers()
 
