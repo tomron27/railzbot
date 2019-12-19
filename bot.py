@@ -1,36 +1,14 @@
-"""
-First, a few callback functions are defined. Then, those functions are passed to
-the Dispatcher and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-
-Usage:
-Example of a bot-user conversation using ConversationHandler.
-Send /start to initiate the conversation.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
-"""
-
-import logging
 import os
 import sys
-from utils import get_fuzzy_station_name
-from route import get_routes
-from datetime import datetime, timedelta
+from utils import *
+from datetime import datetime
 import dateparser
+from threading import Thread
+from socketserver import TCPServer
 
 import telegram
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                           ConversationHandler)
-
-# Enabling logging
-logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger()
-
-DAYS_DICT = {'א': 6, 'ב': 0, 'ג': 1, 'ד': 2, 'ה': 3, 'ו': 4, 'ש': 5}
-REV_DAYS_DICT = {v: k for k, v in DAYS_DICT.items()}
-
-CHOOSE_ORIGIN, CHOOSE_DEST, CHOOSE_TIME, PARSE_TIME, PAST_ROUTE, TIME_SCHEDULE, DAY_SCHEDULE = range(7)
 
 
 def start(update, context):
@@ -77,30 +55,6 @@ def get_dest_station(update, context):
                                                                                 one_time_keyboard=True))
 
     return CHOOSE_TIME
-
-
-def get_route(update, context, timestamp):
-    depart_station = context.user_data['depart_station']
-    dest_station = context.user_data['dest_station']
-    res = get_routes(depart_station, dest_station, timestamp)
-    update.message.reply_text(res, parse_mode=telegram.ParseMode.MARKDOWN)
-
-
-def past_route_keyboard(update, context):
-    conv_end_reply_keyboard = [['סיימתי', 'חיפוש חדש', 'צור תזכורת']]
-    update.message.reply_text("איך עוד אפשר לעזור?", reply_markup=telegram.ReplyKeyboardMarkup(conv_end_reply_keyboard,
-                                                                                               resize_keyboard=True,
-                                                                                               one_time_keyboard=True))
-
-
-def notify(context):
-    recv_context = context.job.context
-    chat_id = recv_context.user_data['chat_id']
-    context.bot.send_message(chat_id=chat_id, text="תזכורת מסלולים:")
-    depart_station = recv_context.user_data['depart_station']
-    dest_station = recv_context.user_data['dest_station']
-    res = get_routes(depart_station, dest_station, datetime.now())
-    context.bot.send_message(chat_id=chat_id, text=res, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
 def get_depart_time(update, context):
@@ -172,16 +126,11 @@ def get_time_schedule(update, context):
 def get_day_schedule(update, context):
     user = update.message.from_user
     sched_day_message = update.message.text
-    if "," in sched_day_message:
-        try:
-            sanitized_days = [DAYS_DICT[x] for x in list(sched_day_message.replace(" ", "").replace(",", ""))]
-            if len(sanitized_days) == 0:
-                update.message.reply_text("לא הצלחתי להבין את טווח הימים. נסה/י להזין שוב ללא גרשיים או פיסוק מיותר.")
-                return DAY_SCHEDULE
-        except:
-            update.message.reply_text("לא הצלחתי להבין את טווח הימים. נסה/י להזין שוב ללא גרשיים או פיסוק מיותר.")
-            return DAY_SCHEDULE
-    else:
+    try:
+        sanitized_days = [DAYS_DICT[x] for x in list(sched_day_message.replace(" ", "").replace(",", ""))]
+        if len(sanitized_days) == 0:
+            raise ValueError("לא נמצאו ימים")
+    except:
         update.message.reply_text("לא הצלחתי להבין את טווח הימים. נסה/י להזין שוב ללא גרשיים או פיסוק מיותר.")
         return DAY_SCHEDULE
 
@@ -256,8 +205,13 @@ if __name__ == '__main__':
     if mode == "dev":
         logger.info("Dev mode")
         updater.start_polling()
+
+        app_url = "http://localhost:8080/"
+        wakeup_warpper(app_url)
+
     elif mode == "prod":
         logger.info("Production mode")
+
         PORT = int(os.environ.get("PORT", "8443"))
         HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
         # Code from https://github.com/python-telegram-bot/python-telegram-bot/wiki/Webhooks#heroku
@@ -265,6 +219,10 @@ if __name__ == '__main__':
                               port=PORT,
                               url_path=TOKEN)
         updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
+
+        app_url = "http://railzbot.herokuapp.com/"
+        wakeup_warpper(app_url)
+
     else:
         logger.error("No MODE specified!")
         sys.exit(1)
