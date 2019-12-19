@@ -217,7 +217,7 @@ if __name__ == '__main__':
                               url_path=TOKEN)
         updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
 
-        app_url = "https://localhost:8080/"
+        app_url = "https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN)
         wakeup_wrapper(app_url)
 
     else:
