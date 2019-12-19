@@ -27,12 +27,16 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger()
 
-CHOOSE_ORIGIN, CHOOSE_DEST, CHOOSE_TIME, PARSE_TIME, CALC_RESULT = range(5)
+# TODO - Fix dates to start in monday...
+DAYS_DICT = {'א': 0, 'ב': 1, 'ג': 2, 'ד': 3, 'ה': 4, 'ו': 5, 'ש': 6}
+REV_DAYS_DICT = {v: k for k, v in DAYS_DICT.items()}
+
+CHOOSE_ORIGIN, CHOOSE_DEST, CHOOSE_TIME, PARSE_TIME, PAST_ROUTE, TIME_SCHEDULE, DAY_SCHEDULE = range(7)
 
 
 def start(update, context):
     update.message.reply_text("ברוכ/ה הבא/ה לריילזבוט!")
-    update.message.reply_text("הכנס/י תחנת מוצא:")
+    update.message.reply_text("הכנס תחנת מוצא:")
     return CHOOSE_ORIGIN
 
 
@@ -68,24 +72,49 @@ def get_dest_station(update, context):
         update.message.reply_text("נתונים חסרים. אנא התחל/י מחדש")
         return ConversationHandler.END
 
-    reply_keyboard = [['אחר כך', 'עכשיו']]
-    update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+    time_reply_keyboard = [['אחר כך', 'עכשיו']]
+    update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(time_reply_keyboard,
+                                                                                resize_keyboard=True,
+                                                                                one_time_keyboard=True))
 
     return CHOOSE_TIME
 
 
-def get_depart_time(update, context):
+def get_route(update, context, timestamp):
+    depart_station = context.user_data['depart_station']
+    dest_station = context.user_data['dest_station']
+    res = get_routes(depart_station, dest_station, timestamp)
+    update.message.reply_text(res, parse_mode=telegram.ParseMode.MARKDOWN)
 
+
+def past_route_keyboard(update, context):
+    conv_end_reply_keyboard = [['סיימתי', 'חיפוש חדש', 'צור תזכורת']]
+    update.message.reply_text("איך עוד אפשר לעזור?", reply_markup=telegram.ReplyKeyboardMarkup(conv_end_reply_keyboard,
+                                                                                               resize_keyboard=True,
+                                                                                               one_time_keyboard=True))
+
+
+def notify(context):
+    recv_context = context.job.context
+    chat_id = recv_context.user_data['chat_id']
+    context.bot.send_message(chat_id=chat_id, text="תזכורת מסלולים:")
+    depart_station = recv_context.user_data['depart_station']
+    dest_station = recv_context.user_data['dest_station']
+    res = get_routes(depart_station, dest_station, datetime.now())
+    context.bot.send_message(chat_id=chat_id, text=res, parse_mode=telegram.ParseMode.MARKDOWN)
+
+
+def get_depart_time(update, context):
     user = update.message.from_user
     logger.info("User {}, keyboard time input: {}".format(user, update.message.text))
     time_keyboard_input = update.message.text
     if time_keyboard_input == "עכשיו":
-        update.message.reply_text("מחשב תוצאות עבור: {}".format(time_keyboard_input), reply_markup=telegram.ReplyKeyboardRemove())
-        depart_station = context.user_data['depart_station']
-        dest_station = context.user_data['dest_station']
-        res = get_routes(depart_station, dest_station, datetime.now())
-        update.message.reply_text(res, parse_mode=telegram.ParseMode.MARKDOWN)
-        return ConversationHandler.END
+        update.message.reply_text("מחשב תוצאות עבור: {}".format(time_keyboard_input),
+                                  reply_markup=telegram.ReplyKeyboardRemove())
+        timestamp = datetime.now()
+        get_route(update, context, timestamp)
+        past_route_keyboard(update, context)
+        return PAST_ROUTE
     else:
         update.message.reply_text("באיזה זמן?", reply_markup=telegram.ReplyKeyboardRemove())
         return PARSE_TIME
@@ -100,17 +129,73 @@ def get_parsed_time(update, context):
         update.message.reply_text("לא הצלחתי להבין מתי. נסה/י להזין תאריך ושעה או טקסט כגון 'מחר 08:30'.")
         return PARSE_TIME
     now = datetime.now()
-    if (now - found_time).seconds > 30:
+    if (now - found_time).total_seconds() > 30:
         update.message.reply_text("מחשב תוצאות עבור: {}".format(found_time.strftime('%d/%m/%y %H:%M')))
-        update.message.reply_text("לא ניתן לקבל לוחות זמנים של רכבות עבר. נסה/י שנית.")
+        update.message.reply_text("לא ניתן לקבל לוחות זמנים עבור רכבות עבר. הכנס/י זמן אחר.")
         return PARSE_TIME
     else:
         update.message.reply_text("מחשב תוצאות עבור: {}".format(found_time.strftime('%d/%m/%y %H:%M')))
-        depart_station = context.user_data['depart_station']
-        dest_station = context.user_data['dest_station']
-        res = get_routes(depart_station, dest_station, found_time)
-        update.message.reply_text(res, parse_mode=telegram.ParseMode.MARKDOWN)
+        get_route(update, context, found_time)
+        past_route_keyboard(update, context)
+        return PAST_ROUTE
+
+
+def past_route(update, context):
+    user = update.message.from_user
+    conv_end_message = update.message.text
+    logger.info("User {}, past route input: {}".format(user, conv_end_message))
+    if conv_end_message == 'סיימתי':
+        update.message.reply_text('ריילזבוט שמח לעזור!', reply_markup=telegram.ReplyKeyboardRemove())
         return ConversationHandler.END
+    if conv_end_message == 'חיפוש חדש':
+        update.message.reply_text("הכנס תחנת מוצא:", reply_markup=telegram.ReplyKeyboardRemove())
+        return CHOOSE_ORIGIN
+    if conv_end_message == 'צור תזכורת':
+        update.message.reply_text("באיזו שעה להתריע?", reply_markup=telegram.ReplyKeyboardRemove())
+        return TIME_SCHEDULE
+
+
+def get_time_schedule(update, context):
+    user = update.message.from_user
+    sched_time_message = update.message.text
+    logger.info("User {}, sched time input: {}".format(user, sched_time_message))
+    found_time = dateparser.parse(sched_time_message)
+    if found_time is None:
+        update.message.reply_text("לא הצלחתי להבין מתי. נסה/י להזין שעה בפורמט כמו '08:30'.")
+        return TIME_SCHEDULE
+    found_time = found_time.time()
+    context.user_data['time_schedule'] = found_time
+    update.message.reply_text("אתריע בשעה {}.".format(found_time.strftime("%H:%M")))
+    update.message.reply_text("באיזה ימים? הכנס/י רשימה מהצורה 'א,ב,ג...'.")
+    return DAY_SCHEDULE
+
+
+def get_day_schedule(update, context):
+    user = update.message.from_user
+    sched_day_message = update.message.text
+    if "," in sched_day_message:
+        try:
+            days = list(sched_day_message.replace(",", ""))
+            if len(days) == 0:
+                update.message.reply_text("לא הצלחתי להבין את טווח הימים. נסה/י להזין שוב ללא גרשיים או פיסוק מיותר.")
+                return DAY_SCHEDULE
+            sanitized_days = days
+        except:
+            update.message.reply_text("לא הצלחתי להבין את טווח הימים. נסה/י להזין שוב ללא גרשיים או פיסוק מיותר.")
+            return DAY_SCHEDULE
+    else:
+        update.message.reply_text("לא הצלחתי להבין את טווח הימים. נסה/י להזין שוב ללא גרשיים או פיסוק מיותר.")
+        return DAY_SCHEDULE
+
+    # Pack needed job data in context.user_data
+    update.message.reply_text("אתריע בימים: {}".format([REV_DAYS_DICT[x] for x in sanitized_days]))
+    context.user_data['chat_id'] = update.effective_chat.id
+    context.user_data['days'] = sanitized_days
+    found_time = context.user_data['time_schedule']
+    logger.info("User {}, adding schedule at time {}, days: {}".format(user, found_time, sanitized_days))
+    context.job_queue.run_daily(notify, found_time, days=tuple(sanitized_days), context=context)
+    update.message.reply_text("התראה נוספה בהצלחה.")
+    return PAST_ROUTE
 
 
 def cancel(update, context):
@@ -139,7 +224,10 @@ def main():
             CHOOSE_ORIGIN: [MessageHandler(Filters.text, get_depart_station)],
             CHOOSE_DEST: [MessageHandler(Filters.text, get_dest_station)],
             CHOOSE_TIME: [MessageHandler(Filters.text, get_depart_time)],
-            PARSE_TIME: [MessageHandler(Filters.text, get_parsed_time)]
+            PARSE_TIME: [MessageHandler(Filters.text, get_parsed_time)],
+            PAST_ROUTE: [MessageHandler(Filters.text, past_route)],
+            TIME_SCHEDULE: [MessageHandler(Filters.text, get_time_schedule)],
+            DAY_SCHEDULE: [MessageHandler(Filters.text, get_day_schedule, pass_job_queue=True)],
         },
 
         fallbacks=[CommandHandler('cancel', cancel)]
