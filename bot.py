@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger()
 
 # TODO - Fix dates to start in monday...
-DAYS_DICT = {'א': 0, 'ב': 1, 'ג': 2, 'ד': 3, 'ה': 4, 'ו': 5, 'ש': 6}
+DAYS_DICT = {'א': 6, 'ב': 0, 'ג': 1, 'ד': 2, 'ה': 3, 'ו': 4, 'ש': 5}
 REV_DAYS_DICT = {v: k for k, v in DAYS_DICT.items()}
 
 CHOOSE_ORIGIN, CHOOSE_DEST, CHOOSE_TIME, PARSE_TIME, PAST_ROUTE, TIME_SCHEDULE, DAY_SCHEDULE = range(7)
