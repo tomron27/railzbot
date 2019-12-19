@@ -161,9 +161,9 @@ def notify(context):
 
 
 # Server / HTTP Utils
-def server():
-    logger.info("TCP server started")
-    httpd = TCPServer(("", 8080), WakeupHandler)
+def server(server_url, port):
+    logger.info("TCP server started at {}:{}".format(server_url, port))
+    httpd = TCPServer((server_url, port), WakeupHandler)
     httpd.serve_forever()
 
 
@@ -184,9 +184,9 @@ def wakeup_worker(wake_url, rep=30):
         time.sleep(rep)
 
 
-def wakeup_wrapper(app_url):
+def wakeup_wrapper(app_url, port=8080):
     # Wakeup Server
-    server_thread = Thread(target=server)
+    server_thread = Thread(target=server, args=(app_url, port))
     server_thread.daemon = True
     server_thread.start()
 

@@ -3,8 +3,6 @@ import sys
 from utils import *
 from datetime import datetime
 import dateparser
-from threading import Thread
-from socketserver import TCPServer
 
 import telegram
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
@@ -206,8 +204,8 @@ if __name__ == '__main__':
         logger.info("Dev mode")
         updater.start_polling()
 
-        app_url = "http://localhost:8080/"
-        wakeup_wrapper(app_url)
+        # app_url = "localhost"
+        # wakeup_wrapper(app_url)
 
     elif mode == "prod":
         logger.info("Production mode")
@@ -220,8 +218,8 @@ if __name__ == '__main__':
                               url_path=TOKEN)
         updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
 
-        app_url = "http://railzbot.herokuapp.com/"
-        wakeup_wrapper(app_url)
+        # app_url = ""
+        # wakeup_wrapper(app_url, PORT)
 
     else:
         logger.error("No MODE specified!")
