@@ -188,7 +188,7 @@ class WakeupHandler(BaseHTTPRequestHandler):
 
 
 def wakeup_worker(wake_url, rep=30):
-    logger.info("Wake up worker invoked")
+    logger.info("Wake up worker invoked. Sending GET request to: {}".format(wake_url))
     while True:
         res = requests.get(wake_url, verify=False)
         if res.status_code != 200:
