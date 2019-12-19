@@ -218,7 +218,7 @@ if __name__ == '__main__':
         updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
 
         app_url = "https://{}.herokuapp.com/".format(HEROKU_APP_NAME)
-        wakeup_wrapper("127.0.0.1", PORT)
+        wakeup_wrapper("127.0.0.1")
 
     else:
         logger.error("No MODE specified!")

@@ -197,7 +197,7 @@ def wakeup_worker(wake_url, rep=30):
         time.sleep(rep)
 
 
-def wakeup_wrapper(app_url, port=8080):
+def wakeup_wrapper(app_url, port=5000):
     # Wakeup Server
     server_thread = Thread(target=server, args=(app_url, port))
     server_thread.daemon = True
