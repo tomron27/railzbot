@@ -2,7 +2,6 @@ import os
 import sys
 from utils import *
 from datetime import datetime
-from dateparser import parse
 
 import telegram
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
@@ -110,7 +109,7 @@ def get_time_schedule(update, context):
     user = update.message.from_user
     sched_time_message = update.message.text
     logger.info("User {}, sched time input: {}".format(user, sched_time_message))
-    found_time = dateparser.parse(sched_time_message)
+    found_time = get_fuzzy_time(sched_time_message)
     if found_time is None:
         update.message.reply_text("לא הצלחתי להבין מתי. נסה/י להזין שעה בפורמט כמו '08:30'.")
         return TIME_SCHEDULE
