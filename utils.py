@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import requests
 import json
 from fuzzywuzzy import process, fuzz
+from dateparser import parse
 from config import *
 import telegram
 from http.server import BaseHTTPRequestHandler
@@ -49,6 +50,17 @@ def get_fuzzy_station_name(query):
     stations = list(eng_station_id.keys()) + list(heb_station_id.keys())
     res = process.extractOne(query, stations, scorer=fuzz.UWRatio)
     return res
+
+
+def get_fuzzy_time(s):
+    if s.isdigit():
+        if len(s) == 4:
+            s = s[:2] + ":" + s[2:]
+        elif len(s) == 3:
+            s = "0" + s[:1] + ":" + s[1:]
+        else:
+            return None
+    return parse(s)
 
 
 def get_routes(start_station, end_station, timestamp):

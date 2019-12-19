@@ -2,7 +2,7 @@ import os
 import sys
 from utils import *
 from datetime import datetime
-import dateparser
+from dateparser import parse
 
 import telegram
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
@@ -75,7 +75,7 @@ def get_parsed_time(update, context):
     user = update.message.from_user
     logger.info("User {}, parsed time input: {}".format(user, update.message.text))
     time_input = update.message.text
-    found_time = dateparser.parse(time_input)
+    found_time = get_fuzzy_time(time_input)
     if found_time is None:
         update.message.reply_text("לא הצלחתי להבין מתי. נסה/י להזין תאריך ושעה או טקסט כגון 'מחר 08:30'.")
         return PARSE_TIME
