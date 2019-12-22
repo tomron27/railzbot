@@ -98,6 +98,8 @@ def get_routes(start_station, end_station, timestamp):
         if len(routes) == 0:
             response = "אין רכבות זמינות. אנא נסה/י מאוחר יותר.\n"
         for i, route in enumerate(routes[:ROUTE_LIMIT]):
+            if i > 0:
+                response += "\n"
             response += "*מסלול {}*:\n".format(i+1)
             for j, train in enumerate(route['Train']):
                 if j > 0:

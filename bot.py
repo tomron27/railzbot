@@ -105,6 +105,7 @@ def get_parsed_hour(update, context):
         update.message.reply_text("לא הצלחתי להבין מתי. נסה/י שוב.")
         return PARSE_HOUR
     timestamp = datetime.combine(context.user_data['search_date'], found_time.time())
+    update.message.reply_text("מחשב מסלול עבור: {}".format(timestamp.strftime("%d/%m/%Y %H:%M")))
     get_route(update, context, timestamp)
     past_route_keyboard(update, context)
     return PAST_ROUTE
