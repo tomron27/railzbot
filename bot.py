@@ -98,6 +98,7 @@ def get_custom_day(update, context):
     if found_time is None:
         update.message.reply_text("לא הצלחתי להבין את התאריך. נסה/י שוב.", reply_markup=telegram.ReplyKeyboardRemove())
         return PARSE_DAY
+    update.message.reply_text("אוקיי, ה-{}".format(found_time.strftime("%d/%m/%Y")))
     context.user_data['search_date'] = found_time.date()
 
     return PARSE_DAY
