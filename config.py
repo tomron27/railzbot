@@ -12,7 +12,7 @@ DAYS_DICT = {'א': 6, 'ב': 0, 'ג': 1, 'ד': 2, 'ה': 3, 'ו': 4, 'ש': 5}
 REV_DAYS_DICT = {v: k for k, v in DAYS_DICT.items()}
 
 # Bot conversation params
-CHOOSE_ORIGIN, CHOOSE_DEST, CHOOSE_TIME, PARSE_TIME, PAST_ROUTE, TIME_SCHEDULE, DAY_SCHEDULE = range(7)
+CHOOSE_ORIGIN, CHOOSE_DEST, CHOOSE_TIME, PARSE_DAY, PARSE_HOUR, PAST_ROUTE, TIME_SCHEDULE, DAY_SCHEDULE = range(8)
 
 # Enabling logging
 logging.basicConfig(level=logging.INFO,

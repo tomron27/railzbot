@@ -46,48 +46,68 @@ def get_dest_station(update, context):
         update.message.reply_text("נתונים חסרים. אנא התחל/י מחדש")
         return ConversationHandler.END
 
-    time_reply_keyboard = [['אחר כך', 'עכשיו']]
-    update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(time_reply_keyboard,
+    now_reply_keyboard = [['לא', 'כן']]
+    update.message.reply_text("עכשיו?", reply_markup=telegram.ReplyKeyboardMarkup(now_reply_keyboard,
                                                                                 resize_keyboard=True,
                                                                                 one_time_keyboard=True))
 
     return CHOOSE_TIME
 
 
-def get_depart_time(update, context):
+def get_choose_time(update, context):
     user = update.message.from_user
-    logger.info("User {}, keyboard time input: {}".format(user, update.message.text))
+    logger.info("User {}, keyboard 'now' input: {}".format(user, update.message.text))
     time_keyboard_input = update.message.text
-    if time_keyboard_input == "עכשיו":
-        update.message.reply_text("מחשב תוצאות עבור: {}".format(time_keyboard_input),
+    if time_keyboard_input == "כן":
+        update.message.reply_text("מחפש רכבות קרובות...".format(time_keyboard_input),
                                   reply_markup=telegram.ReplyKeyboardRemove())
         timestamp = datetime.now()
         get_route(update, context, timestamp)
         past_route_keyboard(update, context)
         return PAST_ROUTE
     else:
-        update.message.reply_text("באיזה זמן?", reply_markup=telegram.ReplyKeyboardRemove())
-        return PARSE_TIME
+        day_reply_keyboard = [['בתאריך...', 'מחר', 'היום']]
+        update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(day_reply_keyboard,
+                                                                                    resize_keyboard=True,
+                                                                                    one_time_keyboard=True))
+        return PARSE_DAY
 
 
-def get_parsed_time(update, context):
+def get_parsed_day(update, context):
+    user = update.message.from_user
+    day_input = update.message.text
+    logger.info("User {}, parsed day input: {}".format(user, day_input))
+    context.user_data['day_input'] = day_input
+    if context.user_data['day_input'] == "היום":
+        context.user_data['search_date'] = datetime.now().date()
+    elif context.user_data['day_input'] == "מחר":
+        context.user_data['search_date'] = datetime.now().date() + timedelta(hours=24)
+    elif context.user_data['day_input'] == "תאריך":
+        update.message.reply_text("הכנס תאריך:", reply_markup=telegram.ReplyKeyboardRemove())
+        manual_day_input = update.message.text
+        logger.info("User {}, manual day input: {}".format(user, manual_day_input))
+        found_time = parse(manual_day_input)
+        if found_time is None:
+            update.message.reply_text("לא הצלחתי להבין את התאריך. נסה/י שוב.", reply_markup=telegram.ReplyKeyboardRemove())
+            return PARSE_DAY
+        context.user_data['search_date'] = found_time.date()
+    update.message.reply_text("באיזו שעה?", reply_markup=telegram.ReplyKeyboardRemove())
+
+    return PARSE_HOUR
+
+
+def get_parsed_hour(update, context):
     user = update.message.from_user
     logger.info("User {}, parsed time input: {}".format(user, update.message.text))
     time_input = update.message.text
     found_time = get_fuzzy_time(time_input)
     if found_time is None:
-        update.message.reply_text("לא הצלחתי להבין מתי. נסה/י להזין תאריך ושעה או טקסט כגון 'מחר 08:30'.")
-        return PARSE_TIME
-    now = datetime.now()
-    if (now - found_time).total_seconds() > 30:
-        update.message.reply_text("מחשב תוצאות עבור: {}".format(found_time.strftime('%d/%m/%y %H:%M')))
-        update.message.reply_text("לא ניתן לקבל לוחות זמנים עבור רכבות עבר. הכנס/י זמן אחר.")
-        return PARSE_TIME
-    else:
-        update.message.reply_text("מחשב תוצאות עבור: {}".format(found_time.strftime('%d/%m/%y %H:%M')))
-        get_route(update, context, found_time)
-        past_route_keyboard(update, context)
-        return PAST_ROUTE
+        update.message.reply_text("לא הצלחתי להבין מתי. נסה/י שוב.")
+        return PARSE_HOUR
+    timestamp = datetime.combine(context.user_data['search_date'], found_time.time())
+    get_route(update, context, timestamp)
+    past_route_keyboard(update, context)
+    return PAST_ROUTE
 
 
 def past_route(update, context):
@@ -160,15 +180,16 @@ def main():
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
-    # Add conversation handler with the states GENDER, PHOTO, LOCATION and BIO
+    # Add conversation handler with states
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
 
         states={
             CHOOSE_ORIGIN: [MessageHandler(Filters.text, get_depart_station)],
             CHOOSE_DEST: [MessageHandler(Filters.text, get_dest_station)],
-            CHOOSE_TIME: [MessageHandler(Filters.text, get_depart_time)],
-            PARSE_TIME: [MessageHandler(Filters.text, get_parsed_time)],
+            CHOOSE_TIME: [MessageHandler(Filters.text, get_choose_time)],
+            PARSE_DAY: [MessageHandler(Filters.text, get_parsed_day)],
+            PARSE_HOUR: [MessageHandler(Filters.text, get_parsed_hour)],
             PAST_ROUTE: [MessageHandler(Filters.text, past_route)],
             TIME_SCHEDULE: [MessageHandler(Filters.text, get_time_schedule)],
             DAY_SCHEDULE: [MessageHandler(Filters.text, get_day_schedule, pass_job_queue=True)],
@@ -203,8 +224,8 @@ if __name__ == '__main__':
         logger.info("Dev mode")
         updater.start_polling()
 
-        app_url = "https://localhost/"
-        wakeup_wrapper(app_url)
+        # app_url = "https://localhost/"
+        # wakeup_wrapper(app_url)
 
     elif mode == "prod":
         logger.info("Production mode")
@@ -217,8 +238,8 @@ if __name__ == '__main__':
                               url_path=TOKEN)
         updater.bot.set_webhook("https://{}.herokuapp.com/{}".format(HEROKU_APP_NAME, TOKEN))
 
-        app_url = "https://{}.herokuapp.com/".format(HEROKU_APP_NAME)
-        wakeup_wrapper("127.0.0.1")
+        # app_url = "https://{}.herokuapp.com/".format(HEROKU_APP_NAME)
+        # wakeup_wrapper("127.0.0.1")
 
     else:
         logger.error("No MODE specified!")
