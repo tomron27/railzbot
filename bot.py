@@ -116,9 +116,13 @@ def get_parsed_hour(update, context):
         return PARSE_HOUR
     timestamp = datetime.combine(context.user_data['search_date'], found_time.time())
     now = datetime.now()
-    update.message.reply_text("מחפש רכבות עבור: {}".format(found_time.strftime('%d/%m/%y %H:%M')))
-    if (now - found_time).total_seconds() > 30:
+    update.message.reply_text("מחפש רכבות עבור: {}".format(timestamp.strftime('%d/%m/%y %H:%M')))
+    if (now - timestamp).total_seconds() > 30:
         update.message.reply_text("לא ניתן לקבל לוחות זמנים עבור רכבות עבר. הכנס/י תאריך ושעה אחרים.")
+        day_reply_keyboard = [['בתאריך...', 'מחר', 'היום']]
+        update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(day_reply_keyboard,
+                                                                                    resize_keyboard=True,
+                                                                                    one_time_keyboard=True))
         return PARSE_DAY
     get_route(update, context, timestamp)
     past_route_keyboard(update, context)
