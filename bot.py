@@ -82,7 +82,7 @@ def get_parsed_day(update, context):
         context.user_data['search_date'] = datetime.now().date()
     elif context.user_data['day_input'] == "מחר":
         context.user_data['search_date'] = datetime.now().date() + timedelta(hours=24)
-    elif context.user_data['day_input'] == "תאריך":
+    elif context.user_data['day_input'] == "בתאריך...":
         update.message.reply_text("הכנס תאריך:", reply_markup=telegram.ReplyKeyboardRemove())
         manual_day_input = update.message.text
         logger.info("User {}, manual day input: {}".format(user, manual_day_input))
