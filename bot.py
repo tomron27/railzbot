@@ -84,16 +84,23 @@ def get_parsed_day(update, context):
         context.user_data['search_date'] = datetime.now().date() + timedelta(hours=24)
     elif context.user_data['day_input'] == "בתאריך...":
         update.message.reply_text("הכנס תאריך:", reply_markup=telegram.ReplyKeyboardRemove())
-        manual_day_input = update.message.text
-        logger.info("User {}, manual day input: {}".format(user, manual_day_input))
-        found_time = parse(manual_day_input)
-        if found_time is None:
-            update.message.reply_text("לא הצלחתי להבין את התאריך. נסה/י שוב.", reply_markup=telegram.ReplyKeyboardRemove())
-            return PARSE_DAY
-        context.user_data['search_date'] = found_time.date()
+        return CUSTOM_DAY
     update.message.reply_text("באיזו שעה?", reply_markup=telegram.ReplyKeyboardRemove())
 
     return PARSE_HOUR
+
+
+def get_custom_day(update, context):
+    user = update.message.from_user
+    manual_day_input = update.message.text
+    logger.info("User {}, manual day input: {}".format(user, manual_day_input))
+    found_time = parse(manual_day_input)
+    if found_time is None:
+        update.message.reply_text("לא הצלחתי להבין את התאריך. נסה/י שוב.", reply_markup=telegram.ReplyKeyboardRemove())
+        return PARSE_DAY
+    context.user_data['search_date'] = found_time.date()
+
+    return PARSE_DAY
 
 
 def get_parsed_hour(update, context):
@@ -190,6 +197,7 @@ def main():
             CHOOSE_DEST: [MessageHandler(Filters.text, get_dest_station)],
             CHOOSE_TIME: [MessageHandler(Filters.text, get_choose_time)],
             PARSE_DAY: [MessageHandler(Filters.text, get_parsed_day)],
+            CUSTOM_DAY: [MessageHandler(Filters.text, get_custom_day)],
             PARSE_HOUR: [MessageHandler(Filters.text, get_parsed_hour)],
             PAST_ROUTE: [MessageHandler(Filters.text, past_route)],
             TIME_SCHEDULE: [MessageHandler(Filters.text, get_time_schedule)],
