@@ -41,6 +41,7 @@ def get_dest_station(update, context):
         dest_station = context.user_data['dest_station']
         if depart_station == dest_station:
             update.message.reply_text("אנא הכנס/י תחנת מוצא ויעד שונות.")
+            update.message.reply_text("הכנס תחנת מוצא:")
             return CHOOSE_ORIGIN
     else:
         update.message.reply_text("נתונים חסרים. אנא התחל/י מחדש")
@@ -98,10 +99,11 @@ def get_custom_day(update, context):
     if found_time is None:
         update.message.reply_text("לא הצלחתי להבין את התאריך. נסה/י שוב.", reply_markup=telegram.ReplyKeyboardRemove())
         return PARSE_DAY
-    update.message.reply_text("אוקיי, ה-{}".format(found_time.strftime("%d/%m/%Y")))
+    update.message.reply_text("אוקיי, ה-{}".format(found_time.strftime("%d/%m/%Y")), reply_markup=telegram.ReplyKeyboardRemove())
     context.user_data['search_date'] = found_time.date()
+    update.message.reply_text("באיזו שעה?", reply_markup=telegram.ReplyKeyboardRemove())
 
-    return PARSE_DAY
+    return PARSE_HOUR
 
 
 def get_parsed_hour(update, context):
