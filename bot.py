@@ -96,8 +96,12 @@ def get_custom_day(update, context):
     manual_day_input = update.message.text
     logger.info("User {}, manual day input: {}".format(user, manual_day_input))
     found_time = parse(manual_day_input)
-    if found_time is None:
+    if found_time is None or found_time.year < CUR_YEAR:
         update.message.reply_text("לא הצלחתי להבין את התאריך. נסה/י שוב.", reply_markup=telegram.ReplyKeyboardRemove())
+        day_reply_keyboard = [['בתאריך...', 'מחר', 'היום']]
+        update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(day_reply_keyboard,
+                                                                                    resize_keyboard=True,
+                                                                                    one_time_keyboard=True))
         return PARSE_DAY
     update.message.reply_text("אוקיי, ה-{}".format(found_time.strftime("%d/%m/%Y")), reply_markup=telegram.ReplyKeyboardRemove())
     context.user_data['search_date'] = found_time.date()
