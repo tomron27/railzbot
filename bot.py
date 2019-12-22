@@ -158,7 +158,7 @@ def get_time_schedule(update, context):
         return TIME_SCHEDULE
     found_time = found_time.time()
     context.user_data['time_schedule'] = found_time
-    update.message.reply_text("אתריע בשעה {}.".format(found_time.strftime("%H:%M")))
+    update.message.reply_text("אוקיי, ב{}".format(found_time.strftime("%H:%M")))
     update.message.reply_text("באיזה ימים? הכנס/י רשימה מהצורה 'א,ב,ג...'.")
     return DAY_SCHEDULE
 
