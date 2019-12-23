@@ -49,7 +49,6 @@ def get_dest_station(update, context):
 
     now_reply_keyboard = [['לא', 'כן']]
     update.message.reply_text("עכשיו?", reply_markup=telegram.ReplyKeyboardMarkup(now_reply_keyboard,
-                                                                                resize_keyboard=True,
                                                                                 one_time_keyboard=True))
 
     return CHOOSE_TIME
@@ -69,7 +68,6 @@ def get_choose_time(update, context):
     else:
         day_reply_keyboard = [['בתאריך...', 'מחר', 'היום']]
         update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(day_reply_keyboard,
-                                                                                    resize_keyboard=True,
                                                                                     one_time_keyboard=True))
         return PARSE_DAY
 
@@ -100,7 +98,6 @@ def get_custom_day(update, context):
         update.message.reply_text("לא הצלחתי להבין את התאריך. נסה/י שוב.", reply_markup=telegram.ReplyKeyboardRemove())
         day_reply_keyboard = [['בתאריך...', 'מחר', 'היום']]
         update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(day_reply_keyboard,
-                                                                                    resize_keyboard=True,
                                                                                     one_time_keyboard=True))
         return PARSE_DAY
     update.message.reply_text("אוקיי, ה-{}".format(found_time.strftime("%d/%m/%Y")), reply_markup=telegram.ReplyKeyboardRemove())
@@ -125,7 +122,6 @@ def get_parsed_hour(update, context):
         update.message.reply_text("לא ניתן לקבל לוחות זמנים עבור רכבות עבר. הכנס/י תאריך ושעה אחרים.")
         day_reply_keyboard = [['בתאריך...', 'מחר', 'היום']]
         update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(day_reply_keyboard,
-                                                                                    resize_keyboard=True,
                                                                                     one_time_keyboard=True))
         return PARSE_DAY
     get_route(update, context, timestamp)
@@ -138,8 +134,7 @@ def past_route(update, context):
     conv_end_message = update.message.text
     logger.info("User {}, past route input: {}".format(user, conv_end_message))
     if conv_end_message == 'סיימתי':
-        update.message.reply_text('ריילזבוט שמח לעזור!', reply_markup=telegram.ReplyKeyboardRemove())
-        return ConversationHandler.END
+        return happy_end(update, context)
     if conv_end_message == 'חיפוש חדש':
         update.message.reply_text("הכנס תחנת מוצא:", reply_markup=telegram.ReplyKeyboardRemove())
         return CHOOSE_ORIGIN
@@ -182,14 +177,28 @@ def get_day_schedule(update, context):
     logger.info("User {}, adding schedule at time {}, days: {}".format(user, found_time, sanitized_days))
     context.job_queue.run_daily(notify, found_time, days=tuple(sanitized_days), context=context)
     update.message.reply_text("התראה נוספה בהצלחה.")
-    return ConversationHandler.END
+    return happy_end(update, context)
+
+
+def timeout(update, context):
+    user = update.message.from_user
+    chat_id = context.message.chat_id
+    logger.info("User {} timed out".format(user))
+    update.send_message(chat_id=chat_id, text="עקב חוסר פעילות נותקת מהמערכת.", reply_markup=telegram.ReplyKeyboardRemove())
+    update.send_message(chat_id=chat_id, text="להתחלה לחצ/י: /start", reply_markup=telegram.ReplyKeyboardRemove())
+    return happy_end(update, context)
 
 
 def cancel(update, context):
     user = update.message.from_user
     logger.info("User {} canceled the conversation.".format(user))
-    update.message.reply_text('ריילזבוט שמח לעזור!')
+    return happy_end(update, context)
 
+
+def happy_end(update, context):
+    chat_id = update.effective_chat.id
+    context.bot.send_message(chat_id=chat_id, text="ריילזבוט שמח לעזור!", reply_markup=telegram.ReplyKeyboardRemove())
+    context.bot.send_message(chat_id=chat_id, text="להתחלה לחצ/י על /start", reply_markup=telegram.ReplyKeyboardRemove())
     return ConversationHandler.END
 
 
@@ -217,9 +226,12 @@ def main():
             PAST_ROUTE: [MessageHandler(Filters.text, past_route)],
             TIME_SCHEDULE: [MessageHandler(Filters.text, get_time_schedule)],
             DAY_SCHEDULE: [MessageHandler(Filters.text, get_day_schedule, pass_job_queue=True)],
+            ConversationHandler.TIMEOUT: [MessageHandler(None, timeout)]
         },
 
-        fallbacks=[CommandHandler('cancel', cancel)]
+        fallbacks=[CommandHandler('cancel', cancel)],
+
+        conversation_timeout=CONVERSATION_TIMEOUT
     )
 
     dp.add_handler(conv_handler)

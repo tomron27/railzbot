@@ -160,7 +160,6 @@ def get_route(update, context, timestamp):
 def past_route_keyboard(update, context):
     conv_end_reply_keyboard = [['סיימתי', 'חיפוש חדש', 'צור תזכורת']]
     update.message.reply_text("איך עוד אפשר לעזור?", reply_markup=telegram.ReplyKeyboardMarkup(conv_end_reply_keyboard,
-                                                                                               resize_keyboard=True,
                                                                                                one_time_keyboard=True))
 
 
