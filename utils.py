@@ -157,12 +157,6 @@ def get_route(update, context, timestamp):
     update.message.reply_text(res, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
-def past_route_keyboard(update, context):
-    conv_end_reply_keyboard = [['סיימתי', 'חיפוש חדש', 'צור תזכורת']]
-    update.message.reply_text("איך עוד אפשר לעזור?", reply_markup=telegram.ReplyKeyboardMarkup(conv_end_reply_keyboard,
-                                                                                               one_time_keyboard=True))
-
-
 def notify(context):
     # TODO - Add reminder remove functionality
     recv_context = context.job.context

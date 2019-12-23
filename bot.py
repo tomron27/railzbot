@@ -18,11 +18,9 @@ def get_depart_station(update, context):
     user = update.message.from_user
     input_text = update.message.text
     logger.info("User {}, departure input: {}".format(user, input_text))
-    res = get_fuzzy_station_name(update.message.text)
     # TODO - Validate input and fuzzy lookup
-    found_station, score = res
-    context.user_data['depart_station'] = found_station
-    update.message.reply_text("תחנת מוצא: {}".format(found_station))
+    context.user_data['depart_station'], score = get_fuzzy_station_name(update.message.text)
+    update.message.reply_text("תחנת מוצא: {}".format(context.user_data['depart_station']))
     update.message.reply_text("הכנס/י תחנת יעד:")
     return CHOOSE_DEST
 
@@ -30,11 +28,9 @@ def get_depart_station(update, context):
 def get_dest_station(update, context):
     user = update.message.from_user
     logger.info("User {}, destination input: {}".format(user, update.message.text))
-    res = get_fuzzy_station_name(update.message.text)
     # TODO - Validate input and fuzzy lookup
-    found_station, score = res
-    context.user_data['dest_station'] = found_station
-    update.message.reply_text("תחנת יעד: {}".format(found_station))
+    context.user_data['dest_station'], score = get_fuzzy_station_name(update.message.text)
+    update.message.reply_text("תחנת יעד: {}".format(context.user_data['dest_station']))
 
     if 'depart_station' in context.user_data and 'dest_station' in context.user_data:
         depart_station = context.user_data['depart_station']
@@ -47,43 +43,50 @@ def get_dest_station(update, context):
         update.message.reply_text("נתונים חסרים. אנא התחל/י מחדש")
         return ConversationHandler.END
 
-    now_reply_keyboard = [['לא', 'כן']]
-    update.message.reply_text("עכשיו?", reply_markup=telegram.ReplyKeyboardMarkup(now_reply_keyboard,
-                                                                                one_time_keyboard=True))
+    update.message.reply_text("עכשיו?", reply_markup=telegram.ReplyKeyboardMarkup([['לא', 'כן']]))
 
     return CHOOSE_TIME
 
 
 def get_choose_time(update, context):
     user = update.message.from_user
-    logger.info("User {}, keyboard 'now' input: {}".format(user, update.message.text))
-    time_keyboard_input = update.message.text
-    if time_keyboard_input == "כן":
-        update.message.reply_text("מחפש רכבות קרובות...".format(time_keyboard_input),
-                                  reply_markup=telegram.ReplyKeyboardRemove())
+    context.user_data['time_keyboard_input'] = update.message.text
+    logger.info("User {}, keyboard 'now' input: {}".format(user, context.user_data['time_keyboard_input']))
+    if context.user_data['time_keyboard_input'] == "כן":
+        update.message.reply_text("מחפש רכבות קרובות...", reply_markup=telegram.ReplyKeyboardRemove())
         timestamp = datetime.now()
         get_route(update, context, timestamp)
-        past_route_keyboard(update, context)
+        update.message.reply_text("איך עוד אפשר לעזור?",
+                                  reply_markup=telegram.ReplyKeyboardMarkup([['סיימתי', 'חיפוש חדש', 'צור תזכורת']]))
         return PAST_ROUTE
+    elif context.user_data['time_keyboard_input'] == "לא":
+        update.message.reply_text("מתי?", 
+                                  reply_markup=telegram.ReplyKeyboardMarkup([['בתאריך...', 'מחר', 'היום']]))
     else:
-        day_reply_keyboard = [['בתאריך...', 'מחר', 'היום']]
-        update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(day_reply_keyboard,
-                                                                                    one_time_keyboard=True))
-        return PARSE_DAY
+        update.message.reply_text("לא הצלחתי להבין.", reply_markup=telegram.ReplyKeyboardRemove())
+        update.message.reply_text("לחפש רכבות לעכשיו?", reply_markup=telegram.ReplyKeyboardMarkup([['לא', 'כן']]))
+
+        return CHOOSE_TIME
+    return PARSE_DAY
 
 
 def get_parsed_day(update, context):
     user = update.message.from_user
-    day_input = update.message.text
-    logger.info("User {}, parsed day input: {}".format(user, day_input))
-    context.user_data['day_input'] = day_input
-    if context.user_data['day_input'] == "היום":
-        context.user_data['search_date'] = datetime.now().date()
-    elif context.user_data['day_input'] == "מחר":
-        context.user_data['search_date'] = datetime.now().date() + timedelta(hours=24)
-    elif context.user_data['day_input'] == "בתאריך...":
+    context.user_data['day_keyboard_input'] = update.message.text
+    logger.info("User {}, parsed day input: {}".format(user, context.user_data['day_keyboard_input']))
+    if context.user_data['day_keyboard_input'] == "היום":
+        context.user_data['date_input'] = datetime.now()
+    elif context.user_data['day_keyboard_input'] == "מחר":
+        context.user_data['date_input'] = datetime.now() + timedelta(hours=24)
+    elif context.user_data['day_keyboard_input'] == "בתאריך...":
         update.message.reply_text("הכנס תאריך:", reply_markup=telegram.ReplyKeyboardRemove())
         return CUSTOM_DAY
+    else:
+        update.message.reply_text("לא הצלחתי להבין.", reply_markup=telegram.ReplyKeyboardRemove())
+        update.message.reply_text("בחר חלון תאריכים לחיפוש רכבות:", 
+                                  reply_markup=telegram.ReplyKeyboardMarkup([['בתאריך...', 'מחר', 'היום']]))
+        return PARSE_DAY
+    
     update.message.reply_text("באיזו שעה?", reply_markup=telegram.ReplyKeyboardRemove())
 
     return PARSE_HOUR
@@ -95,13 +98,13 @@ def get_custom_day(update, context):
     logger.info("User {}, manual day input: {}".format(user, manual_day_input))
     found_time = parse(manual_day_input)
     if found_time is None or found_time.year < CUR_YEAR:
-        update.message.reply_text("לא הצלחתי להבין את התאריך. נסה/י שוב.", reply_markup=telegram.ReplyKeyboardRemove())
-        day_reply_keyboard = [['בתאריך...', 'מחר', 'היום']]
-        update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(day_reply_keyboard,
-                                                                                    one_time_keyboard=True))
+        update.message.reply_text("לא הצלחתי להבין.", reply_markup=telegram.ReplyKeyboardRemove())
+        update.message.reply_text("בחר חלון תאריכים לחיפוש רכבות:", 
+                                  reply_markup=telegram.ReplyKeyboardMarkup([['בתאריך...', 'מחר', 'היום']]))
         return PARSE_DAY
-    update.message.reply_text("אוקיי, ה-{}".format(found_time.strftime("%d/%m/%Y")), reply_markup=telegram.ReplyKeyboardRemove())
-    context.user_data['search_date'] = found_time.date()
+    context.user_data['date_input'] = found_time
+    update.message.reply_text("אוקיי, ה-{}".format(context.user_data['date_input'].strftime("%d/%m/%Y")), 
+                              reply_markup=telegram.ReplyKeyboardRemove())
     update.message.reply_text("באיזו שעה?", reply_markup=telegram.ReplyKeyboardRemove())
 
     return PARSE_HOUR
@@ -110,37 +113,42 @@ def get_custom_day(update, context):
 def get_parsed_hour(update, context):
     user = update.message.from_user
     logger.info("User {}, parsed time input: {}".format(user, update.message.text))
-    time_input = update.message.text
-    found_time = get_fuzzy_time(time_input)
-    if found_time is None:
+    context.user_data['time_input'] = update.message.text
+    context.user_data['time_input'] = get_fuzzy_time(context.user_data['time_input'])
+    if context.user_data['time_input'] is None:
         update.message.reply_text("לא הצלחתי להבין מתי. נסה/י שוב.")
         return PARSE_HOUR
-    timestamp = datetime.combine(context.user_data['search_date'], found_time.time())
-    now = datetime.now()
-    update.message.reply_text("מחפש רכבות עבור: {}".format(timestamp.strftime('%d/%m/%y %H:%M')))
-    if (now - timestamp).total_seconds() > 30:
+    context.user_data['timestamp_input'] = datetime.combine(context.user_data['date_input'].date(), 
+                                                            context.user_data['time_input'].time())
+    update.message.reply_text("מחפש רכבות עבור: {}"
+                              .format(context.user_data['timestamp_input'].strftime('%d/%m/%y %H:%M')))
+    if (datetime.now() - context.user_data['timestamp_input']).total_seconds() > 30:
         update.message.reply_text("לא ניתן לקבל לוחות זמנים עבור רכבות עבר. הכנס/י תאריך ושעה אחרים.")
-        day_reply_keyboard = [['בתאריך...', 'מחר', 'היום']]
-        update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup(day_reply_keyboard,
-                                                                                    one_time_keyboard=True))
+        update.message.reply_text("מתי?", reply_markup=telegram.ReplyKeyboardMarkup([['בתאריך...', 'מחר', 'היום']]))
         return PARSE_DAY
-    get_route(update, context, timestamp)
-    past_route_keyboard(update, context)
+    get_route(update, context, context.user_data['timestamp_input'])
+    update.message.reply_text("איך עוד אפשר לעזור?", 
+                              reply_markup=telegram.ReplyKeyboardMarkup([['סיימתי', 'חיפוש חדש', 'צור תזכורת']]))
     return PAST_ROUTE
 
 
 def past_route(update, context):
     user = update.message.from_user
-    conv_end_message = update.message.text
-    logger.info("User {}, past route input: {}".format(user, conv_end_message))
-    if conv_end_message == 'סיימתי':
+    context.user_data['conv_end_message'] = update.message.text
+    logger.info("User {}, past route input: {}".format(user, context.user_data['conv_end_message']))
+    if context.user_data['conv_end_message'] == 'סיימתי':
         return happy_end(update, context)
-    if conv_end_message == 'חיפוש חדש':
+    elif context.user_data['conv_end_message'] == 'חיפוש חדש':
         update.message.reply_text("הכנס תחנת מוצא:", reply_markup=telegram.ReplyKeyboardRemove())
         return CHOOSE_ORIGIN
-    if conv_end_message == 'צור תזכורת':
+    elif context.user_data['conv_end_message'] == 'צור תזכורת':
         update.message.reply_text("באיזו שעה להתריע?", reply_markup=telegram.ReplyKeyboardRemove())
         return TIME_SCHEDULE
+    else:
+        update.message.reply_text("לא הצלחתי להבין.")
+        update.message.reply_text("איך עוד אפשר לעזור?",
+                                  reply_markup=telegram.ReplyKeyboardMarkup([['סיימתי', 'חיפוש חדש', 'צור תזכורת']]))
+        return PAST_ROUTE
 
 
 def get_time_schedule(update, context):
@@ -149,11 +157,10 @@ def get_time_schedule(update, context):
     logger.info("User {}, sched time input: {}".format(user, sched_time_message))
     found_time = get_fuzzy_time(sched_time_message)
     if found_time is None:
-        update.message.reply_text("לא הצלחתי להבין מתי. נסה/י להזין שעה בפורמט כמו '08:30'.")
+        update.message.reply_text("לא הצלחתי להבין מתי. נסה/י להזין שעה בפורמט כמו '08:30':")
         return TIME_SCHEDULE
-    found_time = found_time.time()
-    context.user_data['time_schedule'] = found_time
-    update.message.reply_text("אוקיי, ב{}".format(found_time.strftime("%H:%M")))
+    context.user_data['time_schedule'] = found_time.time()
+    update.message.reply_text("אוקיי, ב{}".format(context.user_data['time_schedule'].strftime("%H:%M")))
     update.message.reply_text("באיזה ימים? הכנס/י רשימה מהצורה 'א,ב,ג...'.")
     return DAY_SCHEDULE
 
