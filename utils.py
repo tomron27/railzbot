@@ -164,6 +164,7 @@ def past_route_keyboard(update, context):
 
 
 def notify(context):
+    # TODO - Add reminder remove functionality
     recv_context = context.job.context
     chat_id = recv_context.user_data['chat_id']
     context.bot.send_message(chat_id=chat_id, text="תזכורת מסלולים:")
