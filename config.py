@@ -1,9 +1,10 @@
+import os
 import logging
 
 # HTTP / Server params
 WAKEUP_PERIOD = 600
 
-CONVERSATION_TIMEOUT = 300
+CONVERSATION_TIMEOUT = 10
 
 # Railway API params
 BASE_URL = "https://www.rail.co.il/apiinfo/api/Plan/GetRoutes"

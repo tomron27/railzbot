@@ -188,12 +188,12 @@ def get_day_schedule(update, context):
 
 
 def timeout(update, context):
-    user = update.message.from_user
+    user = context.effective_user
     chat_id = context.message.chat_id
     logger.info("User {} timed out".format(user))
     update.send_message(chat_id=chat_id, text="עקב חוסר פעילות נותקת מהמערכת.", reply_markup=telegram.ReplyKeyboardRemove())
-    update.send_message(chat_id=chat_id, text="להתחלה לחצ/י: /start", reply_markup=telegram.ReplyKeyboardRemove())
-    return happy_end(update, context)
+    update.send_message(chat_id=chat_id, text="להתחלה לחצ/י על /start", reply_markup=telegram.ReplyKeyboardRemove())
+    return ConversationHandler.END
 
 
 def cancel(update, context):
