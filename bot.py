@@ -9,7 +9,7 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
 
 
 def start(update, context):
-    update.message.reply_text("ברוכ/ה הבא/ה לריילזבוט!")
+    update.message.reply_text("ברוכ/ה הבא/ה לרכבוט!")
     update.message.reply_text("הכנס תחנת מוצא:")
     return CHOOSE_ORIGIN
 
@@ -204,7 +204,7 @@ def cancel(update, context):
 
 def happy_end(update, context):
     chat_id = update.effective_chat.id
-    context.bot.send_message(chat_id=chat_id, text="ריילזבוט שמח לעזור!", reply_markup=telegram.ReplyKeyboardRemove())
+    context.bot.send_message(chat_id=chat_id, text="רכבוט שמח לעזור!", reply_markup=telegram.ReplyKeyboardRemove())
     context.bot.send_message(chat_id=chat_id, text="להתחלה לחצ/י על /start", reply_markup=telegram.ReplyKeyboardRemove())
     return ConversationHandler.END
 

@@ -48,6 +48,7 @@ def get_combined_station_id_dict():
 def get_fuzzy_station_name(query):
     eng_station_id, heb_station_id, _, _ = get_stations()
     stations = list(eng_station_id.keys()) + list(heb_station_id.keys())
+    query = query.replace('נתבג', 'נמל תעופה').replace('נתב"ג', 'נמל תעופה')
     res = process.extractOne(query, stations, scorer=fuzz.UWRatio)
     return res
 
